@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "yazio-connector",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+  },
+
+  // Rate limiters. Nothing to provision — a namespace id is just a number this
+  // Worker picks — so the deploy button still asks for nothing. Counting is
+  // per-colo and the window is 60s, so these are a ceiling on abuse rather than
+  // a guarantee; see the Security section of the README.
+  "ratelimits": [
+    // /token, per client IP. One OAuth flow is one call, so this is far above
+    // any human reconnecting the connector, and low enough that spraying
+    // passwords through Yazio's login is pointless.
+    {
+      "name": "TOKEN_LIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 },
+    },
+    // MCP, per session. Generous for a conversation firing several tool calls
+    // a turn; caps a runaway loop, which matters because one call can fan out
+    // into dozens of Yazio requests.
+    {
+      "name": "MCP_LIMIT",
+      "namespace_id": "1002",
+      "simple": { "limit": 60, "period": 60 },
+    },
+  ],
+
+  // Nothing else to configure: no secrets, no variables, no storage. Every user
+  // signs in with their own Yazio account through the connector's OAuth fields,
+  // and "today" comes from their Yazio profile.
+}
