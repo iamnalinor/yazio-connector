@@ -1,17 +1,17 @@
-# yazio-connector
+# yazio-mcp
 
 A remote MCP server that gives Claude access to a [Yazio](https://www.yazio.com/) food diary:
 search the product catalogue, log what you ate, read the diary, and check calories and macros
 against your goals.
 
-It runs as a **custom connector** in claude.ai (web, desktop, mobile) — Claude calls it from its
-side, so there is nothing to run locally.
+It runs as a **custom connector** in claude.ai (web, desktop, mobile), and works the same way in
+ChatGPT and Codex — the client calls it from its side, so there is nothing to run locally.
 
 ## Setup
 
 ### 1. Deploy
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/iamnalinor/yazio-connector)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/iamnalinor/yazio-mcp)
 
 The button signs you in to Cloudflare, copies this repository into your own GitHub account and
 deploys it from there. Nothing to install, and nothing to fill in: no secrets, no variables, no KV
@@ -40,7 +40,7 @@ bun run deploy
 
 Settings → Connectors → **Add custom connector**:
 
-- **URL** — `https://yazio-connector.<your-subdomain>.workers.dev`
+- **URL** — `https://yazio-mcp.<your-subdomain>.workers.dev`
 - **OAuth Client ID** — your **Yazio email**
 - **OAuth Client Secret** — your **Yazio password**
 
@@ -48,6 +48,37 @@ Claude then runs the OAuth flow by itself. There is no login page and none is ne
 fields already are the credentials. The Worker exchanges them with Yazio once, hands Claude back
 Yazio's own 48-hour token, and forgets both. Claude renews it through Yazio's refresh grant, so the
 password is never sent again.
+
+### Or add it to ChatGPT
+
+Custom connectors in ChatGPT need **Developer mode**, which is available on Pro, Business,
+Enterprise and Edu plans.
+
+1. Settings → Apps & Connectors → Advanced settings → turn on **Developer mode**.
+2. Back in Apps & Connectors, **Create** a connector:
+   - **MCP Server URL** — `https://yazio-mcp.<your-subdomain>.workers.dev`
+   - **Authentication** — **OAuth**
+3. Open the OAuth advanced settings and fill in the client yourself — the connector does not offer
+   dynamic registration, so ChatGPT will not do it for you:
+   - **Client ID** — your **Yazio email**
+   - **Client Secret** — your **Yazio password**
+4. Tick that you trust the connector, then **Create**. ChatGPT runs the OAuth flow and comes back
+   connected.
+
+To use it in a chat, pick it from the **+** menu → Developer mode. ChatGPT asks for confirmation
+before each write (logging food, deleting entries); reads go through without asking.
+
+### Or add it to Codex
+
+```bash
+codex mcp add yazio --url https://yazio-mcp.<your-subdomain>.workers.dev --oauth-client-id you@example.com --oauth-client-secret 'your-yazio-password'
+```
+
+```bash
+codex mcp login yazio
+```
+
+Codex keeps the secret in `~/.codex/config.toml`, so keep that file private.
 
 If you don't have password (e.g. registered via Google), reset it [here](https://www.yazio.com/en/app/account/forgot-password).
 

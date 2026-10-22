@@ -2,8 +2,9 @@
  * OAuth 2.1 in front of an API that only has a password grant.
  *
  * claude.ai's "Add custom connector" dialog speaks OAuth and nothing else, and
- * it offers exactly two free-text fields. So this connector uses them for what
- * Yazio actually needs:
+ * it offers exactly two free-text fields. ChatGPT's connector dialog (under
+ * advanced OAuth settings) and Codex's `--oauth-client-id/--oauth-client-secret`
+ * offer the same two. So this connector uses them for what Yazio actually needs:
  *
  *   OAuth Client ID     → your Yazio email
  *   OAuth Client Secret → your Yazio password
@@ -46,8 +47,18 @@ const SCOPE = "mcp";
 const CODE_TTL_SECONDS = 5 * 60;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Hosts Claude uses for its OAuth callback, plus loopback for local testing. */
-const REDIRECT_HOSTS = ["claude.ai", "claude.com", "localhost", "127.0.0.1"];
+/**
+ * Hosts Claude and ChatGPT use for their OAuth callbacks, plus loopback — which
+ * is where Codex (and any other local client) listens, and where tests run.
+ */
+const REDIRECT_HOSTS = [
+  "claude.ai",
+  "claude.com",
+  "chatgpt.com",
+  "chat.openai.com",
+  "localhost",
+  "127.0.0.1",
+];
 
 interface AuthorizationCode {
   email: string;
@@ -94,8 +105,8 @@ export function publicMcpUrl(request: Request): URL {
 }
 
 /**
- * Codes may only be delivered to Claude's own callback, or to loopback while
- * testing. Matching is exact-host or a real subdomain, never a suffix, so
+ * Codes may only be delivered to Claude's or ChatGPT's own callback, or to
+ * loopback for Codex and testing. Matching is exact-host or a real subdomain, never a suffix, so
  * `claude.ai.evil.com` and `notclaude.ai` are refused.
  */
 export function allowedRedirect(target: string): boolean {
@@ -182,7 +193,9 @@ function handleAuthorize(request: Request): Response {
 
   if (!redirectUri) return setupError("Missing redirect_uri.");
   if (!allowedRedirect(redirectUri)) {
-    return setupError(`redirect_uri ${redirectUri} is not allowed; only Claude's callbacks are.`);
+    return setupError(
+      `redirect_uri ${redirectUri} is not allowed; only Claude's, ChatGPT's and loopback callbacks are.`,
+    );
   }
 
   // A missing or malformed email is a setup mistake, so say so in plain text

@@ -12,20 +12,24 @@ import {
 } from "../src/session";
 
 describe("allowedRedirect", () => {
-  it("accepts Claude's callbacks", () => {
+  it("accepts Claude's and ChatGPT's callbacks", () => {
     expect(allowedRedirect("https://claude.ai/api/mcp/auth_callback")).toBe(true);
     expect(allowedRedirect("https://claude.com/api/mcp/auth_callback")).toBe(true);
     expect(allowedRedirect("https://app.claude.ai/callback")).toBe(true);
+    expect(allowedRedirect("https://chatgpt.com/connector_platform_oauth_redirect")).toBe(true);
+    expect(allowedRedirect("https://chat.openai.com/connector_platform_oauth_redirect")).toBe(true);
   });
 
-  it("accepts loopback over http for local testing", () => {
+  it("accepts loopback over http for Codex and local testing", () => {
     expect(allowedRedirect("http://localhost:6274/oauth/callback")).toBe(true);
     expect(allowedRedirect("http://127.0.0.1:6274/callback")).toBe(true);
   });
 
-  it("refuses hosts that merely look like Claude", () => {
+  it("refuses hosts that merely look like Claude or ChatGPT", () => {
     expect(allowedRedirect("https://claude.ai.evil.com/steal")).toBe(false);
     expect(allowedRedirect("https://notclaude.ai/steal")).toBe(false);
+    expect(allowedRedirect("https://chatgpt.com.evil.com/steal")).toBe(false);
+    expect(allowedRedirect("https://platform.openai.com/steal")).toBe(false);
     expect(allowedRedirect("https://evil.com/?x=claude.ai")).toBe(false);
   });
 
